@@ -1,5 +1,11 @@
 import argparse
-from covariates import get_unique_training_coordinates, get_covariates, upload_covariates_to_bq
+import os
+from dotenv import load_dotenv
+
+# Load workspace bypass variables
+load_dotenv()
+
+from covariates import get_unique_training_coordinates, get_covariates, upload_covariates_to_bq, process_and_upload_in_chunks
 from soil_covariates import fetch_ssurgo_properties, fetch_soilgrids_properties
 
 if __name__ == "__main__":
@@ -11,6 +17,7 @@ if __name__ == "__main__":
     parser.add_argument('--test-upload', action='store_true', help="Test Step 5: Uploading to BigQuery.")
     
     parser.add_argument('--limit', type=int, default=None, help="Limit number of coordinates for testing. Pass None for all.")
+    parser.add_argument('--chunk-size', type=int, default=5000, help="Chunk size for testing uploads.")
     args = parser.parse_args()
     
     if args.test_bq:
@@ -49,6 +56,5 @@ if __name__ == "__main__":
     if args.test_upload:
         print("--- Testing Step 5: BigQuery Upload ---")
         df_coords = get_unique_training_coordinates(limit=args.limit)
-        df_merged = get_covariates(df_coords)
-        upload_covariates_to_bq(df_merged)
+        process_and_upload_in_chunks(df_coords, chunk_size=args.chunk_size)
         print("-------------------------------------------")

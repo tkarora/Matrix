@@ -34,6 +34,18 @@ gcloud auth application-default login
 
 A `.env` file is already provided in the root directory specifying the target GCP project.
 
+> [!WARNING]
+> **Preventing MutualTLSChannelError (Exit Code -11)**
+> 
+> Due to Google Auth library mechanics occasionally interacting aggressively with corporate proxy networks or automated certificate providers, you must explicitly disable the client certificate pipeline to ensure BigQuery and other backend GCP clients do not segfault during initialization. 
+> 
+> You can permanently configure your shell to bypass this across all scripts in this workspace by running the following commands once:
+> ```bash
+> echo 'export GOOGLE_API_USE_CLIENT_CERTIFICATE=false' >> ~/.bashrc
+> echo 'export GOOGLE_API_USE_MTLS_ENDPOINT=never' >> ~/.bashrc
+> source ~/.bashrc
+> ```
+
 ### 4. Verify Setup
 
 You can verify that your authentication and setup is working by running the provided test script:
