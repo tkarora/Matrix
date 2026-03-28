@@ -6,10 +6,32 @@ os.environ['GOOGLE_API_USE_CLIENT_CERTIFICATE'] = 'false'
 
 from google.cloud import bigquery
 import pandas as pd
+import sys
+import google.auth
+from google.auth.exceptions import DefaultCredentialsError, RefreshError
+import google.auth.transport.requests
 
 from soil_covariates import fetch_ssurgo_properties, fetch_soilgrids_properties
 
+def ensure_gcp_auth():
+    """Validates that Google Cloud ADC is authenticated and not expired."""
+    try:
+        credentials, project = google.auth.default()
+        request = google.auth.transport.requests.Request()
+        credentials.refresh(request)
+    except (DefaultCredentialsError, RefreshError):
+        print("\n" + "="*80)
+        print("ERROR: Google Cloud CLI is not authenticated or credentials have expired.")
+        print("Please run the following command to authenticate before proceeding:")
+        print("    gcloud auth application-default login")
+        print("="*80 + "\n")
+        sys.exit(1)
+    except Exception:
+        # Ignore other exceptions
+        pass
+
 def get_unique_training_coordinates(project_id='cameltrain', dataset='Forest_MATRIX', table='fia_matrix_training_base', target_table='fia_matrix_training_cov_soil', limit=None):
+    ensure_gcp_auth()
     """
     Extracts unique LAT and LON coordinates from the BigQuery training base table,
     excluding those already present in the target covariates table.
@@ -19,7 +41,7 @@ def get_unique_training_coordinates(project_id='cameltrain', dataset='Forest_MAT
     
     try:
         client.get_table(full_target_table)
-        exclude_clause = f" AND NOT EXISTS (SELECT 1 FROM `{full_target_table}` cov WHERE cov.LAT = base.LAT AND cov.LON = base.LON)"
+        exclude_clause = f" AND NOT EXISTS (SELECT 1 FROM `{full_target_table}` cov WHERE ROUND(cov.LAT, 5) = ROUND(base.LAT, 5) AND ROUND(cov.LON, 5) = ROUND(base.LON, 5))"
     except Exception:
         exclude_clause = ""
         
@@ -46,7 +68,18 @@ def get_covariates(df_coords):
     df_soilgrids = fetch_soilgrids_properties(df_coords)
     
     print("Merging SSURGO and SoilGrids dataframes...")
-    df_merged = pd.merge(df_ssurgo, df_soilgrids, on=['LAT', 'LON'], how='left')
+    # [BUGFIX] Prevent EE Serialization Nulls
+    # Earth Engine JSON payloads slightly shift Float64 precision, breaking pd.merge instances.
+    # Rounding keys to 5 decimal places (~1 meter) safely resolves the drifting.
+    df_ssurgo['merge_lat'] = df_ssurgo['LAT'].round(5)
+    df_ssurgo['merge_lon'] = df_ssurgo['LON'].round(5)
+    df_soilgrids['merge_lat'] = df_soilgrids['LAT'].round(5)
+    df_soilgrids['merge_lon'] = df_soilgrids['LON'].round(5)
+    
+    # Merge and safely drop the duplicate coordinate columns
+    df_merged = pd.merge(df_ssurgo, df_soilgrids.drop(columns=['LAT', 'LON']), on=['merge_lat', 'merge_lon'], how='left')
+    df_merged.drop(columns=['merge_lat', 'merge_lon'], inplace=True)
+    
     return df_merged
 
 def upload_covariates_to_bq(df, project_id='cameltrain', dataset='Forest_MATRIX', table='fia_matrix_training_cov_soil'):
