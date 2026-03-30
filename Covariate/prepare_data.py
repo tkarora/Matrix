@@ -1,5 +1,8 @@
+import os
 from google.cloud import bigquery
 
+os.environ['GOOGLE_API_USE_MTLS_ENDPOINT'] = 'never'
+os.environ['GOOGLE_API_USE_CLIENT_CERTIFICATE'] = 'false'
 def create_training_base_table():
     """
     Extracts plot-level longitudinal data from FIA ENTIRE_PLOT and ENTIRE_TREE datasets.
