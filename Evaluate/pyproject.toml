@@ -1,0 +1,12 @@
+[project]
+name = "evaluate"
+version = "0.1.0"
+description = "Evaluation orchestration scripts"
+requires-python = ">=3.10"
+dependencies = [
+    "db-dtypes>=1.5.0",
+    "google-cloud-bigquery>=3.40.1",
+    "pandas>=2.3.3",
+    "scikit-learn>=1.6.1",
+    "scipy>=1.15.2",
+]

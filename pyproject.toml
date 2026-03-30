@@ -26,4 +26,5 @@ default = true
 [tool.uv.workspace]
 members = [
     "Covariate",
+    "Evaluate",
 ]
