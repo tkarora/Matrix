@@ -17,7 +17,15 @@ def create_training_base_table():
     query = """
     CREATE OR REPLACE TABLE `cameltrain.Forest_MATRIX.fia_matrix_training_base` AS
     SELECT 
+        -- Control Number represents a unique temporal visit
         p.CN AS PlotID,
+        
+        -- Permanent plot identification (avoids USFS LAT/LON fuzzing and swapping overlaps)
+        p.STATECD AS STATECD,
+        p.UNITCD AS UNITCD,
+        p.COUNTYCD AS COUNTYCD,
+        p.PLOT AS PLOT,
+        
         p.LAT AS LAT,
         p.LON AS LON,
         p.MEASYEAR AS YR,

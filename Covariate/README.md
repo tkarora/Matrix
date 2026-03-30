@@ -31,7 +31,12 @@ The Random Forest models predict demography using approximately 40 environmental
 - **Class Imbalance:** Mortality is a rare event. Heavy disturbance tracking requires careful stratification.
 
 ---
-*For the data preparation script, see `prepare_data.py`.*
+## Base Data Preparation (`prepare_data.py`)
+Extracts `ENTIRE_PLOT` and `ENTIRE_TREE` into a base longitudinal table (`fia_matrix_training_base`) by grouping observations where `REMPER` is not null. 
+
+> [!NOTE] 
+> **On Plot Connectivity & Spatial Fuzzing** 
+> The USFS FIA strictly anonymizes exact geographic plot coordinates by up to 1 mile and swaps 20% of private land plots. As a result, relying strictly on `LAT` and `LON` for time-series continuity can incorrectly pair distinct, overlapping survey grids. To ensure exact eternal tracking of a physical plot location, `prepare_data.py` natively imports the `STATECD`, `UNITCD`, `COUNTYCD`, and `PLOT` composite variables as a permanent geographic identifier. (A plot's individual *survey visits* are strictly keyed by the timestamped `CN` Control Number, which we've explicitly mapped as `PlotID` for matrix prediction generation).
 
 ## Soil Covariates Extraction Pipeline
 

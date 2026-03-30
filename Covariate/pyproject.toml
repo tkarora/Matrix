@@ -14,6 +14,8 @@ dependencies = [
     "netcdf4>=1.7.3",
     "pandas>=2.3.3",
     "rasterio>=1.4.4",
+    "scikit-learn>=1.7.2",
+    "scipy>=1.15.3",
     "xarray>=2025.6.1",
     "zarr>=2.18.3",
 ]
