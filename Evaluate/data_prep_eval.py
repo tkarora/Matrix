@@ -53,6 +53,10 @@ def create_eval_vectors_table():
     )
     SELECT 
         bg.ID,
+        bg.STATECD, 
+        bg.UNITCD, 
+        bg.COUNTYCD, 
+        bg.PLOT,
         bg.LAT,
         bg.LON,
         bg.YR,

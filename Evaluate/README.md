@@ -21,12 +21,12 @@ In order to rigorously evaluate the matrix models for predicting forest demograp
 Because the FIA dataset contains multiple temporal measurements for identically located plots, a purely random 80/20 data split is insufficient. A random fractional split would indiscriminately leak both temporal and spatial data, potentially placing future measurements in the training set and historical measurements in the test set.
 
 To mathematically guarantee causality and rigorously assess geographic generalization, we employ a **Spatiotemporal 3-Way Split**:
-1. **Spatial Test Set (Out-of-Geography Generalization)**: A random ~20% of unique plots (`PlotID`s) are entirely withheld prior to any temporal sampling. This is achieved using cryptographic hashing securely linked to the PlotID. This tests the model's true geographic generalization by evaluating predictions over "out-of-area" unseen forests.
-2. **Temporal Validation Set (Out-of-Time Forecasting)**: For the 80% remaining "in-sample" training pool, the **single most recent (last)** measurement transition for each plot is actively pulled from the timeline and pushed into the validation set. This cleanly evaluates the model's capability for chronologically forecasting a geographically known location without violating causality. 
+1. **Spatial Test Set (Out-of-Geography Generalization)**: A random ~20% of unique physical plots are entirely withheld prior to any temporal sampling. This is achieved using cryptographic hashing securely linked to the official FIA plot identifiers (`STATECD, UNITCD, COUNTYCD, PLOT`). This tests the model's true geographic generalization by evaluating predictions over "out-of-area" unseen forests.
+2. **Temporal Validation Set (Out-of-Time Forecasting)**: For the 80% remaining "in-sample" training pool, the **single most recent (last)** measurement transition for each unique location is actively pulled from the timeline and pushed into the validation set. This cleanly evaluates the model's capability for chronologically forecasting a geographically known location without violating causality. 
 3. **Training Set**: All previous, historical measurement transitions belonging to the 80% in-sample pool. Any plots possessing only a single chronological transition automatically skip validation to maximize total geographic locations in the training matrix.
 
 ### Accessing the Split Datasets
-The datasets are provisioned directly in BigQuery by executing `python Evaluate/train_test_split.py`. They explicitly branch off from the raw `fia_matrix_training_grid3km_cov` base table:
+The datasets are provisioned directly in BigQuery by executing `python Evaluate/train_test_split.py`. The script dynamically joins the longitudinal `fia_matrix_training_base` tree records with the static `fia_grid3km_covariates` layer to organically form the unified splits:
 - **Train (80% Historical)**: `cameltrain.Forest_MATRIX.fia_matrix_train_set`
 - **Val (80% Future)**: `cameltrain.Forest_MATRIX.fia_matrix_val_set`
 - **Test (20% Holdout)**: `cameltrain.Forest_MATRIX.fia_matrix_test_set`
