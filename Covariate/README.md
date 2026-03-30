@@ -38,6 +38,22 @@ Extracts `ENTIRE_PLOT` and `ENTIRE_TREE` into a base longitudinal table (`fia_ma
 > **On Plot Connectivity & Spatial Fuzzing** 
 > The USFS FIA strictly anonymizes exact geographic plot coordinates by up to 1 mile and swaps 20% of private land plots. As a result, relying strictly on `LAT` and `LON` for time-series continuity can incorrectly pair distinct, overlapping survey grids. To ensure exact eternal tracking of a physical plot location, `prepare_data.py` natively imports the `STATECD`, `UNITCD`, `COUNTYCD`, and `PLOT` composite variables as a permanent geographic identifier. (A plot's individual *survey visits* are strictly keyed by the timestamped `CN` Control Number, which we've explicitly mapped as `PlotID` for matrix prediction generation).
 
+## Spatial Grid Mapping (`grid3km_covariates.py`)
+
+To efficiently connect historical forest plots to pre-computed global environmental arrays without creating explosive Cartesian dependencies, we use the standalone `grid3km_covariates.py` spatial mapper. 
+
+### Implementation Details
+*   **Dimensionality Reduction:** The script executes a strict `SELECT DISTINCT` isolating only the permanent physical coordinates (`STATECD, UNITCD, COUNTYCD, PLOT, LAT, LON`) from the base longitudinal tree data (`fia_matrix_training_base`). This completely drops the millions of individual `PlotID` (temporal visit) rows and bounds trees down to single locations.
+*   **S2 Geographic Joins:** It merges those distinct plot geometries with the pre-populated `grid_3km` BigQuery dataset (containing fields like `C1`-`C21`, `T1`-`T12`) using an S2 bounded geographic query: `ST_DWithin(plot, grid, 10000)`. This searches within 10 km to overcome USFS coordinate blurring rules.
+*   **Nearest Neighbor Matrix:** The algorithm enforces a rigorous `QUALIFY ROW_NUMBER() = 1` partition ordered by `ST_DISTANCE`, ensuring that every physical plot merges precisely once against its closest logical grid cell. The script calculates and stores this difference natively as `Distance_Meters`.
+*   **Preserved Keys:** To satisfy downstream `.RData` `randomForest` predictors, the pipeline accurately outputs the fixed plot coordinate strings tightly as exactly `LAT` and `LON`, alongside all 38 Ecoregion one-hot dummy variables (`GEZ_label*`), but cleanly drops all overlapping dynamic demographics (like `N`, `dY`, and `DBH1`-`DBH13`).
+
+### How to Run
+```bash
+uv run python Covariate/grid3km_covariates.py --execute
+```
+*This generates `cameltrain.Forest_MATRIX.fia_grid3km_covariates`, a pristine, statically bound table ready to instantly match covariates back to active plots via their exact `STATECD, UNITCD, COUNTYCD, PLOT` keys.*
+
 ## Soil Covariates Extraction Pipeline
 
 To populate the `O1`-`O5` soil properties for our training coordinates, we use a hybrid extraction approach defined in `soil_covariates.py` and orchestrated by `covariates.py`.
