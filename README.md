@@ -15,12 +15,30 @@ To create the virtual environment and install all required libraries (including 
 ```bash
 cd ~/Matrix
 uv sync
+source .venv/bin/activate
 ```
 
+### 2. Install Local R Dependencies (For Local Evaluation Only)
+
+If you plan to execute the Matrix modeling scripts or evaluation pipelines locally on your machine (e.g., using `make eval-local-test` inside `/Evaluate`), you must install the native R interpreter and its corresponding forecasting packages:
+
+*(Note: If you only trigger the Google Cloud Run array workflow, you can gracefully skip this step as the foundational `r-base` Docker image handles this identically).*
+
+```bash
+sudo apt-get update
+sudo apt-get install -y r-base
+R -e "install.packages(c('randomForest', 'stringr'), repos='http://cran.rstudio.com/')"
+```
 
 ### 3. Google Cloud Authentication
 
-First, ensure your active `gcloud` configuration points to the correct project:
+First, natively authorize your core Google SDK identity (crucial for local docker and gcloud command line operations):
+
+```bash
+gcloud auth login
+```
+
+Then, ensure your active `gcloud` configuration points to the correct project:
 
 ```bash
 gcloud config set project cameltrain
@@ -31,6 +49,19 @@ Next, generate Application Default Credentials (ADC) so that the Python librarie
 ```bash
 gcloud auth application-default login
 ```
+
+If you plan to build and push Docker containers to Google Artifact Registry (`gcr.io`), you must additionally configure your local Docker daemon to authenticate with Google Cloud identities:
+
+```bash
+gcloud auth configure-docker gcr.io --quiet
+```
+
+> [!IMPORTANT]
+> **Do NOT use Service Account Impersonation for Local Docker Pushes**
+> 
+> When executing `make docker-push` locally, strictly rely on your physical identity authorized by `gcloud auth login` (which organically posesses Artifact Registry Writer permissions). 
+> 
+> Never attempt to forcibly route your deployments through a service account (e.g., using `gcloud config set auth/impersonate_service_account`). Doing so natively triggers absolute `PERMISSION_DENIED` errors at the Docker Credential Helper layer because developers inherently lack explicit token creator keys for deploying. Google Cloud natively assigns your container the correct Service Account context dynamically at *runtime* within the actual Cloud Run framework orchestration!
 
 A `.env` file is already provided in the root directory specifying the target GCP project.
 

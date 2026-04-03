@@ -1,0 +1,11 @@
+.git
+.venv
+Models
+tmp
+*.zip
+*.tar.gz
+__pycache__
+*.pyc
+*.csv
+.env
+.agents

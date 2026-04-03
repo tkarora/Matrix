@@ -75,6 +75,11 @@ def create_eval_vectors_table():
      AND bg.UNITCD = g.UNITCD 
      AND bg.COUNTYCD = g.COUNTYCD 
      AND bg.PLOT = g.PLOT
+    WHERE (
+        -- Concise trick to check if ANY of these 26 columns are NULL. In standard SQL, something + NULL = NULL.
+        bg.DBH1 + bg.DBH2 + bg.DBH3 + bg.DBH4 + bg.DBH5 + bg.DBH6 + bg.DBH7 + bg.DBH8 + bg.DBH9 + bg.DBH10 + bg.DBH11 + bg.DBH12 + bg.DBH13 +
+        bg.TRUE_TPH2_1 + bg.TRUE_TPH2_2 + bg.TRUE_TPH2_3 + bg.TRUE_TPH2_4 + bg.TRUE_TPH2_5 + bg.TRUE_TPH2_6 + bg.TRUE_TPH2_7 + bg.TRUE_TPH2_8 + bg.TRUE_TPH2_9 + bg.TRUE_TPH2_10 + bg.TRUE_TPH2_11 + bg.TRUE_TPH2_12 + bg.TRUE_TPH2_13
+    ) IS NOT NULL
     """
     
     print("Executing query to create 'cameltrain.Forest_MATRIX.fia_grid_3km_eval'...")

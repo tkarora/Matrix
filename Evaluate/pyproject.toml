@@ -9,4 +9,6 @@ dependencies = [
     "pandas>=2.3.3",
     "scikit-learn>=1.6.1",
     "scipy>=1.15.2",
+    "google-cloud-storage>=2.10.0",
+    "pyopenssl>=23.2.0",
 ]

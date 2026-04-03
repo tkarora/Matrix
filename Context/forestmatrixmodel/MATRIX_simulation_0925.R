@@ -102,9 +102,13 @@ load_models <- function(mode, models_dir, FT = NULL, CONT = NULL) {
   if (mode == "NA_FT") {
     if (is.null(FT)) stop("NA_FT mode requires FT.")
     # Exact filenames by FT (from original NA script)
+    cat(sprintf("[R] Loading UP model for FT %s...\n", FT))
     load(file.path(models_dir, sprintf("RF.UG.0503.ft.%s.RData", FT))); RF_up <- RF
+    cat(sprintf("[R] Loading RC model for FT %s...\n", FT))
     load(file.path(models_dir, sprintf("RF.RC.0426.ft.%s.RData", FT))); RF_rc <- RF
+    cat(sprintf("[R] Loading MT model for FT %s...\n", FT))
     load(file.path(models_dir, sprintf("RF.MT.0425.ft.%s.RData", FT))); RF_mt <- RF
+    cat(sprintf("[R] Finished loading models for FT %s.\n", FT))
     return(list(up = RF_up, rc = RF_rc, mt = RF_mt, key = paste0("FT", FT), key_type = "FT"))
   } else {
     if (is.null(CONT)) stop("GLOBAL_GEC mode requires CONT.")
@@ -160,18 +164,35 @@ MATRIX_sim_func <- function(mode, models_dir, abund_matrix, cov_matrix, DBH_vec,
   
   bioclim_df <- if (is.null(bioclim)) cov_matrix else bioclim[cov_matrix$ID, , drop = FALSE]
   
-  for (n in seq_len(nplot)) {
-    # Determine model set and biomass key for this row
-    cond <- cov_matrix[n, , drop = FALSE]
+  cov_matrix$orig_idx <- seq_len(nplot)
+  
+  if (mode == "NA_FT") {
+    groups <- split(cov_matrix, cov_matrix$FT)
+  } else {
+    groups <- split(cov_matrix, cov_matrix$CONT)
+  }
+  
+  for (grp_key in names(groups)) {
+    grp_df <- groups[[grp_key]]
+    
     if (mode == "NA_FT") {
-      mdl <- load_models("NA_FT", models_dir, FT = cond$FT, CONT = NULL)
+      mdl <- load_models("NA_FT", models_dir, FT = grp_key, CONT = NULL)
     } else {
-      mdl <- load_models("GLOBAL_GEC", models_dir, FT = NULL, CONT = CONT)
+      mdl <- load_models("GLOBAL_GEC", models_dir, FT = NULL, CONT = grp_key)
     }
+    
+    for (i in seq_len(nrow(grp_df))) {
+      cond <- grp_df[i, ]
+      n <- cond$orig_idx
     
     # Initial state
     plt_vec  <- as.numeric(abund_matrix[n, ])
     plt_vec0 <- plt_vec
+    
+    if (any(is.na(plt_vec))) {
+      stop(paste("Plot ID:", cond$ID, "has NA in DBH columns! plt_vec:", paste(plt_vec, collapse=",")))
+    }
+    
     # avoid all-zero (log/div-by-zero issues)
     if (sum(plt_vec) == 0) plt_vec[1] <- 1
     
@@ -307,6 +328,10 @@ MATRIX_sim_func <- function(mode, models_dir, abund_matrix, cov_matrix, DBH_vec,
     elapsed <- Sys.time() - start_time
     cat(sprintf("--Plot# %d of %d -- N=%.1f -- CONT=%s -- time=%s\n",
                 n, nplot, N_final, as.character(row_vals$CONT), as.character(elapsed)))
+    }
+    rm(mdl)
+    gc()
+    cat(sprintf("[R] Finished group %s. Ran Garbage Collection.\n", grp_key))
   }
   
   cat("-----Simulation ends-----\n")
