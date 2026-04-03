@@ -185,6 +185,28 @@ make execute-cloud-test
 
 The evaluator scripts will dynamically execute the default vectorized logic, parse the respective dimensional prediction bins, calculated metrics per-plot, and append them straight back into BigQuery's `cameltrain.Forest_MATRIX.forest_matrix_fia_runs`. 
 
+#### Targeted Recovery Runs
+
+If a run fails to complete 100% of the plots (e.g., due to isolated worker crashes or sharding gaps), you can execute a targeted recovery run to process ONLY the missing plots and append them to the same `run_id`.
+
+1. **Generate a Recovery Task Map**:
+   Run `generate_task_map.py` with a filter targeting missing plots:
+   ```bash
+   uv run python3 generate_task_map.py \
+     --bucket="matrix_model" \
+     --tasks=200 \
+     --output_name="recovery_task_map_200.json" \
+     --filter="AND ID NOT IN (SELECT DISTINCT ID FROM \`cameltrain.Forest_MATRIX.forest_matrix_fia_runs\` WHERE run_id = 'YOUR_RUN_ID')"
+   ```
+
+2. **Execute the Recovery Run**:
+   Execute the Cloud Run job passing the custom map and filter:
+   ```bash
+   gcloud run jobs execute matrix-eval-full-split \
+     --tasks=200 \
+     --args="--run-id=YOUR_RUN_ID,--map_name=recovery_task_map_200.json,--filter=AND ID NOT IN (SELECT DISTINCT ID FROM \`cameltrain.Forest_MATRIX.forest_matrix_fia_runs\` WHERE run_id = 'YOUR_RUN_ID')"
+   ```
+
 ---
 
 ## 📈 Comparing Model Error to Input Quality

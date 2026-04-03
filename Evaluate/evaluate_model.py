@@ -104,6 +104,8 @@ def main():
     group.add_argument("--test", action="store_true", help="Evaluate the Test set")
     group.add_argument("--val", action="store_true", help="Evaluate the Validation set")
     parser.add_argument("--workers", type=int, default=4, help="Max parallel workers for local evaluation (reduce to avoid OOM)")
+    parser.add_argument("--filter", default="", help="Custom SQL filter clause")
+    parser.add_argument("--map_name", default="", help="Custom task map blob name")
     args = parser.parse_args()
     
     if args.cloud:
@@ -133,12 +135,18 @@ def main():
         filter_clause = ""
         split_name = "full"
         
+    if args.filter:
+        filter_clause += f" {args.filter}"
+        
     # 1. Load task mapping from Google Cloud Storage (Cache File approach)
     from google.cloud import storage
     import json
     
     bucket_name = "matrix_model"
-    blob_path = f"eval_worker_task_mapping/{split_name}_task_map_{task_count}.json"
+    if args.map_name:
+        blob_path = f"eval_worker_task_mapping/{args.map_name}"
+    else:
+        blob_path = f"eval_worker_task_mapping/{split_name}_task_map_{task_count}.json"
     
     assigned_ft = None
     sub_task_index = 0

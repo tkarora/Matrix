@@ -22,9 +22,16 @@ def generate_map(args):
         filter_clause = ""
         split_name = "full"
         
+    if args.filter:
+        filter_clause += f" {args.filter}"
+        
     storage_client = storage.Client(project=args.project)
     bucket = storage_client.bucket(args.bucket)
-    blob_path = f"eval_worker_task_mapping/{split_name}_task_map_{args.tasks}.json"
+    if args.output_name:
+        blob_path = f"eval_worker_task_mapping/{args.output_name}"
+    else:
+        blob_path = f"eval_worker_task_mapping/{split_name}_task_map_{args.tasks}.json"
+        
     blob = bucket.blob(blob_path)
     
     if blob.exists():
@@ -47,41 +54,36 @@ def generate_map(args):
     task_count = args.tasks
     mapping = {}
     
+    # Pass 1: Assign tasks to FTs and count them
+    ft_task_assignments = {}
     for task_index in range(task_count):
         task_fraction = task_index / task_count
         assigned_ft = None
-        sub_task_index = 0
-        tasks_for_ft = 1
         
         last_cum = 0.0
         for _, row in df_cnt.iterrows():
             this_cum = row['cum_plots']
             if task_fraction < this_cum:
                 assigned_ft = row['FT']
-                pos_within_ft = (task_fraction - last_cum) / (this_cum - last_cum)
-                tasks_allocated = int(round((this_cum - last_cum) * task_count))
-                if tasks_allocated == 0: tasks_allocated = 1
-                
-                sub_task_index = int(pos_within_ft * tasks_allocated)
-                tasks_for_ft = tasks_allocated
                 break
             last_cum = this_cum
-
+            
         if assigned_ft is None:
             assigned_ft = df_cnt.iloc[-1]['FT']
-            tasks_allocated = int(round((1.0 - last_cum) * task_count))
-            if tasks_allocated == 0: tasks_allocated = 1
-            sub_task_index = tasks_allocated - 1
-            tasks_for_ft = tasks_allocated
-
-        if sub_task_index >= tasks_for_ft:
-            sub_task_index = tasks_for_ft - 1
-
-        mapping[str(task_index)] = {
-            'assigned_ft': int(assigned_ft),
-            'tasks_for_ft': int(tasks_for_ft),
-            'sub_task_index': int(sub_task_index)
-        }
+            
+        if assigned_ft not in ft_task_assignments:
+            ft_task_assignments[assigned_ft] = []
+        ft_task_assignments[assigned_ft].append(task_index)
+        
+    # Pass 2: Build the final map with correct tasks_for_ft and sub_task_index
+    for ft, task_indices in ft_task_assignments.items():
+        tasks_allocated = len(task_indices)
+        for sub_idx, task_idx in enumerate(task_indices):
+            mapping[str(task_idx)] = {
+                'assigned_ft': int(ft),
+                'tasks_for_ft': int(tasks_allocated),
+                'sub_task_index': int(sub_idx)
+            }
 
     # Using the storage client and blob initialized at the start of the function
     
@@ -96,5 +98,7 @@ if __name__ == "__main__":
     parser.add_argument("--tasks", type=int, default=1000)
     parser.add_argument("--test", action="store_true")
     parser.add_argument("--val", action="store_true")
+    parser.add_argument("--filter", default="", help="Custom SQL filter clause")
+    parser.add_argument("--output_name", default="", help="Custom output blob name")
     args = parser.parse_args()
     generate_map(args)
