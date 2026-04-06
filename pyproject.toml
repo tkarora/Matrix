@@ -27,4 +27,5 @@ default = true
 members = [
     "Covariate",
     "Evaluate",
+    "Training",
 ]
