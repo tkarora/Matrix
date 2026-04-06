@@ -14,6 +14,9 @@ TEST_TASKS ?= 100
 VAL_TASKS ?= 100
 FULL_TASKS ?= 500
 
+# Default models path (Jingjing's baseline)
+EVAL_MODELS ?= /mnt/kokua-data/Forest/Matrix/model
+
 .PHONY: help eval-local-test eval-local-val eval-local-full docker-build docker-push deploy-cloud-test deploy-cloud-val deploy-cloud-full execute-cloud-test execute-cloud-val execute-cloud-full
 
 help:
@@ -73,7 +76,12 @@ deploy-cloud-test:
 		--service-account $(SERVICE_ACCOUNT) \
 		--add-volume=name=kokua-data,type=cloud-storage,bucket=kokua-data \
 		--add-volume-mount=volume=kokua-data,mount-path=/mnt/kokua-data \
-		--args="--run-id=$(RUN_ID)-test","--cloud","--test"
+		--add-volume=name=matrix-model,type=cloud-storage,bucket=matrix_model \
+		--add-volume-mount=volume=matrix-model,mount-path=/mnt/matrix-model \
+		--args="--run-id=$(RUN_ID)-test","--cloud","--test","--models=$(EVAL_MODELS)"
+
+deploy-cloud-test-fia:
+	$(MAKE) deploy-cloud-test EVAL_MODELS=/mnt/matrix-model/retrained_models
 
 deploy-cloud-val:
 	-gcloud run jobs delete matrix-eval-val-split --region us-central1 --quiet 2>/dev/null || true

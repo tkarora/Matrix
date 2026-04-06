@@ -106,6 +106,7 @@ def main():
     parser.add_argument("--workers", type=int, default=4, help="Max parallel workers for local evaluation (reduce to avoid OOM)")
     parser.add_argument("--filter", default="", help="Custom SQL filter clause")
     parser.add_argument("--map_name", default="", help="Custom task map blob name")
+    parser.add_argument("--task-map-bucket", default="matrix_model", help="GCS bucket for task maps")
     args = parser.parse_args()
     
     if args.cloud:
@@ -142,7 +143,7 @@ def main():
     from google.cloud import storage
     import json
     
-    bucket_name = "matrix_model"
+    bucket_name = args.task_map_bucket
     if args.map_name:
         blob_path = f"eval_worker_task_mapping/{args.map_name}"
     else:

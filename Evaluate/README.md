@@ -108,6 +108,28 @@ By appending the mutual exclusive flags `--test` or `--val`, the orchestrator na
 
 **Execution Configuration Flags (`--cloud`)**: The code handles dynamic mounting paths. You can execute the script locally with standard file paths by passing `--models /local/path` and `--biomass /local/path.csv`. When deploying directly to GCP, you can omit physical pathing and append `--cloud` instead. The orchestrator will intrinsically switch parsing bounds to the container's remote volume storage points (`/mnt/kokua-data/Forest/Matrix/...`).
 
+### Swapping Models for Evaluation
+
+You can evaluate the pipeline against different sets of trained models (e.g., to compare baseline models against newly retrained models) by overriding the models directory path.
+
+#### Local Evaluation
+*   **Via CLI**: Pass the `--models` flag to point to your specific directory containing the `.RData` files:
+    ```bash
+    uv run python evaluate_model.py --models /path/to/your/models --biomass /path/to/biomass.csv
+    ```
+*   **Via Makefile**: Override the `LOCAL_MODELS_DIR` variable when running make targets:
+    ```bash
+    make eval-local-test LOCAL_MODELS_DIR=/path/to/your/models
+    ```
+
+#### Cloud Evaluation
+When running in Cloud mode (using `--cloud`), the container by default looks for models in the mounted volume at `/mnt/kokua-data/Forest/Matrix/model`.
+To use different models in the cloud, you can override the path by passing the `--models` flag in the job execution arguments:
+```bash
+gcloud run jobs execute matrix-eval-job --args="--models=/mnt/kokua-data/Forest/Matrix/your_new_model_dir"
+```
+*(Note: This assumes the new models are also located within the mounted `kokua-data` bucket).*
+
 ### Memory and Scaling Optimizations
 
 To handle heavy `R` simulation runs without exceeding the 16GiB memory limits on Cloud Run (scaled up from 8GiB to accommodate heavy Random Forest weights), we employ two distinct optimization strategies:
