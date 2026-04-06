@@ -98,9 +98,9 @@ train_model <- function(df, target_col, mod_name, out_dir, ft, df_val = NULL) {
   max_nodesize <- 5
   max_mtry     <- 5
   
-  # Rename PrevDBH to D to match evaluation expectations
-  if ("PrevDBH" %in% names(df)) {
-    names(df)[names(df) == "PrevDBH"] <- "D"
+  # Drop DBH to avoid leakage and matching issues in eval
+  if ("DBH" %in% names(df)) {
+    df$DBH <- NULL
   }
   
   sample_size <- max(50, floor(prop * nrow(df)))

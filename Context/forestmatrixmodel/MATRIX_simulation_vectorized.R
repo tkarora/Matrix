@@ -165,6 +165,7 @@ MATRIX_sim_func_vectorized <- function(mode, models_dir, abund_matrix, cov_matri
     expanded_indices <- rep(seq_len(nplot), each = 13)
     expanded_cov <- cond_m[expanded_indices, , drop = FALSE]
     expanded_cov$D <- rep(DBH_vec, times = nplot)
+    expanded_cov$PrevDBH <- expanded_cov$D # Map D to PrevDBH for models that expect it
     
     up_all <- pmax(0, predict(mdl$up, expanded_cov, type = "response") / 5)
     up_matrix <- matrix(up_all, nrow = nplot, ncol = 13, byrow = TRUE)
