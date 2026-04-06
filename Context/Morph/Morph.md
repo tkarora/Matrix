@@ -36,3 +36,14 @@ Morph contains a stub for testing agents on the Matrix model under `Morph/testin
 1. **Defining the Ground Truth**: Establishing a hidden evaluation split (an answer key) containing tree growth transitions or demography data that the agent cannot see during training.
 2. **Formulating the Prompt**: Fleshing out the `description.md` so the agent understands how to pull the training data (e.g., from `cameltrain.Forest_MATRIX.grid_3km` in BigQuery) and what exactly it needs to predict.
 3. **Choosing the Agent's Objective**: Determining whether the agent is expected to reimplement the existing baseline R code (`MATRIX_training_public.R`) in Python, tune its hyperparameters, or build an entirely novel machine learning model for forest demography from scratch.
+
+## Evaluation Metric Decision for DBH Distribution
+
+For the task evaluating the agent's ability to predict the DBH class distribution over time (`forest-matrix-distribution`), we have decided to use **Earth Mover's Distance (EMD)** / Wasserstein Distance as the evaluation metric.
+
+### Rationale
+*   **Ordered Distributions**: DBH classes are ordered (e.g., 5-10cm, 10-15cm). If a model predicts trees in a neighboring bin, it is less wrong than predicting them in a far bin. EMD accounts for this distance between bins.
+*   **Best Practice**: EMD is considered best practice for comparing histogram-like distributions where the bins have a meaningful spatial or numerical order.
+
+### Alternatives Considered
+*   **RMSE on Bin Counts**: Simple to calculate but ignores the order of bins. Treating bins as independent categories fails to capture the continuous nature of tree growth.
