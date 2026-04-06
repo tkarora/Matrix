@@ -1,0 +1,14 @@
+[project]
+name = "training"
+version = "0.1.0"
+description = "Matrix model training orchestration"
+requires-python = ">=3.10"
+dependencies = [
+    "google-cloud-bigquery>=3.40.1",
+    "google-cloud-storage>=2.10.0",
+    "pandas>=2.3.3",
+    "numpy>=1.24.0",
+    "google-cloud-bigquery-storage>=2.26.0",
+    "pyarrow>=15.0.0",
+    "db-dtypes>=1.2.0",
+]

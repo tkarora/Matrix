@@ -90,9 +90,35 @@ Trees are purely statistical, not rule-driven.
 
 ---
 
+## 🏗️ Distributed Training Architecture
+
+To scale the retraining of the Forest Matrix Model, the pipeline has been refactored into a distributed architecture orchestrated by Python and executed by Cloud Run.
+
+### 🐍 Python Orchestrator (`train_model.py`)
+- **Isolation of Cloud Logic**: Handles all BigQuery data extraction and Cloud Storage I/O.
+- **Execution Modes**: Supports both local execution and distributed cloud execution via flags.
+- **Flexibility**: Allows swapping the underlying R script to compare performance and outputs.
+
+### 🗄️ Data Preparation (BigQuery)
+To optimize performance and avoid loading massive tree-level datasets into R memory, data preparation is performed on-the-fly in BigQuery before training:
+- **Upgrowth (UG)**: Extracts tree-level records and calculates diameter increment `dD = (DBH - PrevDBH) / dY`.
+- **Mortality (MT)**: Aggregates trees by Plot and 2-cm DBH class, calculating raw mortality rate = `Sum(Dead TPH) / Sum(Total TPH) / dY`.
+- **Recruitment (RC)**: Aggregates by Plot, summing `TPH / dY` for trees breaching the 10cm threshold.
+This reduces the data size from millions of tree records to a much smaller set of aggregated summaries for MT and RC.
+
+### 📊 R Training Logic (`MATRIX_training_distributed.R`)
+- **Performance Focused**: Stripped of cloud I/O and hardcoded paths to focus solely on model fitting.
+- **Scoped Execution**: Trains models for a specific **Forest Type** passed as a command-line argument.
+- **Optional Data Export**: Preserves the ability to export public datasets via a toggle flag.
+
+### ☁️ Cloud Scalability
+- **Task Sharding**: Tasks are mapped to specific Forest Types.
+- **Compute**: Leverages Cloud Run Jobs for massive horizontal parallelization.
+
+---
+
 ## 🛰️ Future Scope: Custom Parameters
 
 As we move toward a custom retraining pipeline, this module will manage:
 -   **Custom Coordinates (Unseen Forests):** Adapting pipelines to pull site-specific environmental telemetry.
 -   **Custom Variables:** Integrating pollutant loads or micro-telemetry beyond the classic ~40 standard Bio/Soil/Topo variables.
--   **Cloud Native Orchestration:** Bridging `R` statistical accuracy with BigQuery massive horizontal scale.
