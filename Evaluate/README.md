@@ -123,12 +123,23 @@ You can evaluate the pipeline against different sets of trained models (e.g., to
     ```
 
 #### Cloud Evaluation
-When running in Cloud mode (using `--cloud`), the container by default looks for models in the mounted volume at `/mnt/kokua-data/Forest/Matrix/model`.
-To use different models in the cloud, you can override the path by passing the `--models` flag in the job execution arguments:
-```bash
-gcloud run jobs execute matrix-eval-job --args="--models=/mnt/kokua-data/Forest/Matrix/your_new_model_dir"
-```
-*(Note: This assumes the new models are also located within the mounted `kokua-data` bucket).*
+By default, the cloud job looks for baseline models in the mounted `kokua-data` bucket at `/mnt/kokua-data/Forest/Matrix/model`.
+
+To evaluate against the **newly retrained models** (saved in `gs://matrix_model/retrained_models`):
+
+1. **Deploy** the job using the specific target for retrained models (which mounts both buckets and points to the new path):
+   ```bash
+   make deploy-cloud-test-fia
+   ```
+   *Alternatively*, you can use the parameterized command to specify a custom path:
+   ```bash
+   make deploy-cloud-test EVAL_MODELS=/mnt/matrix-model/some_other_dir
+   ```
+
+2. **Execute** the evaluation as usual:
+   ```bash
+   make execute-cloud-test
+   ```
 
 ### Memory and Scaling Optimizations
 
