@@ -79,8 +79,17 @@ train_model <- function(df, target_col, mod_name, out_dir, ft, df_val = NULL) {
   # Standardize response column name
   names(df)[names(df) == target_col] <- "Y"
   
-  # Remove unwanted columns (ID, etc.)
-  attr_remove <- c("PlotID", "CONTINENT", "FT", "GEZ", "Biome", "GEC", "GEZ_label")
+  # Remove unwanted columns (ID, metadata, target-derived variables, and features causing leakage or missing in eval)
+  attr_remove <- c(
+    # Metadata and grouping columns
+    "PlotID", "CONTINENT", "FT", "GEZ", "Biome", "GEC", "GEZ_label",
+    # Excluded in original script / avoid overfitting/leakage
+    "Latitude", "Longitude", "Species", "YR", "PrevYR", "DSN", "TreeID", "Status",
+    # Target variables or derived from targets (avoid leakage)
+    "dD", "flag_dD", "B1", "B2", "B_flag", "harvest_ratio", "harvest_flag", "D_GP",
+    # Intermediate variables from custom prep causing leakage or missing in eval
+    "Dead_TPH", "DBH_class"
+  )
   df <- df[, !colnames(df) %in% attr_remove]
   df <- na.omit(df)
   

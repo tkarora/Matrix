@@ -157,6 +157,7 @@ MATRIX_sim_func_vectorized <- function(mode, models_dir, abund_matrix, cov_matri
     
     # Climate (Constant for now in this simplification, adapt if time-varying is needed)
     cond_m <- cov_matrix 
+    cond_m$TPH <- cond_m$N # Map N to TPH for models that expect it
     
     # 1. Predict Recruitment
     rc_pred <- pmax(0, predict(mdl$rc, cond_m, type = "response")) # nplot length
